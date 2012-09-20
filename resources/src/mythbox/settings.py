@@ -142,6 +142,8 @@ class MythSettings(object):
             'tv_guide_last_selected'     : '0',
             'upcoming_sort_by'           : 'Date',
             'upcoming_sort_ascending'    : 'False',
+
+            'mount_recordings_dir'       : 'False',
         }
 
     def load(self):

@@ -176,6 +176,7 @@ class SettingsWindow(BaseWindow):
             
             self.streamingEnabledRadioButton = self.getControl(208)
             self.recordingsButton = self.getControl(205) 
+            self.mountButton = self.getControl(2001) 
             
             # MythTV Settings
             if hasattr(self.settings, 'master') and self.settings.master:
@@ -184,6 +185,7 @@ class SettingsWindow(BaseWindow):
             
             self.register(Setting(self.settings, 'streaming_enabled', bool, None, self.getControl(208)))
             self.register(Setting(self.settings, 'paths_recordedprefix', str, ExternalizedSettingValidator(MythSettings.verifyRecordingDirs), self.getControl(205)))
+            self.register(Setting(self.settings, 'mount_recordings_dir', bool, None, self.getControl(2001)))
             self.register(Setting(self.settings, 'confirm_on_delete', bool, None, self.getControl(206)))
             self.register(Setting(self.settings, 'aggressive_caching', bool, None, self.getControl(207)))
             
@@ -249,6 +251,7 @@ class SettingsWindow(BaseWindow):
     def renderStreaming(self):
         # special mutual exclusion for handling of streaming enabled
         self.recordingsButton.setEnabled(not self.streamingEnabledRadioButton.isSelected())
+        self.mountButton.setEnabled(not self.streamingEnabledRadioButton.isSelected())
 
     @window_busy
     def render(self):

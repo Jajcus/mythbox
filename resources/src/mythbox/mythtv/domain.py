@@ -21,6 +21,7 @@ import logging
 import os
 import re
 import time
+import subprocess
 
 import mythbox.msg as m
 from mythbox.mythtv.db import inject_db
@@ -973,7 +974,10 @@ class RecordedProgram(Program):
             # Start with myth:// style path and cut off everything except for the base file name. 
             # Check each local recording dir for existence of the file until we get our guy.
             fileOnly = self.getBareFilename()
+            mount = self.settings.getBoolean("mount_recordings_dir")
             for localDir in self.settings.getRecordingDirs():
+                if mount:
+                    self.tryMount(localDir)
                 localPath = os.path.join(localDir, fileOnly)
                 if os.path.exists(localPath):
                     log.debug('Local path for %s is %s' % (self.getFilename(), localPath))
@@ -981,6 +985,25 @@ class RecordedProgram(Program):
                     return self._localPath
             from mythbox.mythtv.conn import ClientException
             raise ClientException("Recording %s not found in %s. Check Settings > Myth TV > Local Recording Dirs" % (fileOnly, ', '.join(self.settings.getRecordingDirs()))) 
+    
+    def tryMount(self, localDir):
+        """Try mounting a directory if not mounted."""
+        log.info("Trying to mount %r" % (localDir,))
+        try:
+            rc = subprocess.call(["mountpoint", "-q", safe_str(localDir)])
+            if rc == 0:
+                log.debug("%r seems already mounted (rc: %r)" % (localDir, rc))
+                # for some reason this is a false positive, so ignore it
+                #return
+            try:
+                subprocess.check_output(["sudo", "mount", safe_str(localDir)],
+                                        stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError, err:
+                log.warning(safe_str("Failed to mount %r,"
+                                        " mount returned %r: %s"
+                                % (localDir, err.returncode, err.output)))
+        except OSError:
+            logger.exception("mount failed")
 
     def getBareFilename(self):
         """
