@@ -1,10 +1,12 @@
-MythBox for XBMC
-================
+MythBox for XBMC (Jajcus' fork)
+===============================
 
 About
 -----
 MythBox is a MythTV frontend for XBMC. Developed as an XBMC addon, MythBox aims to make 
 watching TV a simple (wife tested!) an enjoyable experience using only your remote control.
+
+This is a fork made to make it usable on my Raspberry Pi machine.
 
 Features
 ------
