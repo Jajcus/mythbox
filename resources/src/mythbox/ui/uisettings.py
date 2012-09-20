@@ -177,6 +177,8 @@ class SettingsWindow(BaseWindow):
             self.streamingEnabledRadioButton = self.getControl(208)
             self.recordingsButton = self.getControl(205) 
             self.mountButton = self.getControl(2001) 
+            self.wakeUpCommandButton = self.getControl(2002) 
+            self.wakeUpWaitButton = self.getControl(2003) 
             
             # MythTV Settings
             if hasattr(self.settings, 'master') and self.settings.master:
@@ -195,6 +197,9 @@ class SettingsWindow(BaseWindow):
             self.register(Setting(self.settings, 'mysql_database', str, ExternalizedSettingValidator(MythSettings.verifyMySQLDatabase), self.getControl(303)))
             self.register(Setting(self.settings, 'mysql_user', str, ExternalizedSettingValidator(MythSettings.verifyMySQLUser), self.getControl(304)))              
             self.register(Setting(self.settings, 'mysql_password', str, None, self.getControl(305)))
+            
+            self.register(Setting(self.settings, 'wakeup_command', str, None, self.getControl(2002)))
+            self.register(Setting(self.settings, 'wakeup_wait', int, ExternalizedSettingValidator(MythSettings.verifyWakeUpWait), self.getControl(2003)))
     
             # Fanart Settings
             self.register(Setting(self.settings, 'fanart_tvdb',   bool, None, self.getControl(401)))
@@ -253,6 +258,10 @@ class SettingsWindow(BaseWindow):
         self.recordingsButton.setEnabled(not self.streamingEnabledRadioButton.isSelected())
         self.mountButton.setEnabled(not self.streamingEnabledRadioButton.isSelected())
 
+    def renderWakeUp(self):
+        # special mutual exclusion for handling wakeup wait
+        self.wakeUpWaitButton.setEnabled(bool(self.wakeUpCommandButton.getLabel2()))
+
     @window_busy
     def render(self):
         for setting in self.settingsMap.values():
@@ -260,6 +269,7 @@ class SettingsWindow(BaseWindow):
             setting.render()
 
         self.renderStreaming()
+        self.renderWakeUp()
                     
         import default
         about = "[B]%s[/B]\n\n%s\n\n%s\n\n%s\n\n\n\nMythBox would not be possible without the\nfollowing opensource software and services" % (default.__scriptname__, default.__author__, default.__url__, self.platform.addonVersion())

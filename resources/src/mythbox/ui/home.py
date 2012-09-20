@@ -16,6 +16,9 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+import subprocess
+import time
 import logging
 import xbmc
 import xbmcgui
@@ -166,14 +169,25 @@ class HomeWindow(BaseWindow):
             self.settingsOK = True
         except SettingsException, se:
             showPopup(self.t(m.ERROR), safe_str(se), 7000)
-            self.goSettings()
-            try:
-                self.settings.verify() # TODO: optimize unnecessary re-verify
-                self.settingsOK = True
-            except SettingsException:
-                self.shutdown()
-                self.close()
-                return False
+            if se.wakeup and self.settings.get("wakeup_command"):
+                showPopup(self.t(m.INFO), "Waking the backend up", 7000)
+                subprocess.call(self.settings.get("wakeup_command"),
+                                shell=True)
+                time.sleep(int(self.settings.get("wakeup_wait")))
+                try:
+                    self.settings.verify()
+                    self.settingsOK = True
+                except SettingsException:
+                    pass
+            if not self.settingsOK:
+                self.goSettings()
+                try:
+                    self.settings.verify() # TODO: optimize unnecessary re-verify
+                    self.settingsOK = True
+                except SettingsException:
+                    self.shutdown()
+                    self.close()
+                    return False
             
         if self.settingsOK:
             pool.pools['dbPool'] = pool.EvictingPool(MythDatabaseFactory(**self.deps), maxAgeSecs=10*60, reapEverySecs=10)

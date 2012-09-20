@@ -22,6 +22,8 @@ import socket
 import string
 import mythbox.msg as m
 
+from mysql.connector.errors import InterfaceError
+
 from mythbox.bus import Event, EventBus
 from mythbox.mythtv.db import MythDatabase
 from mythbox.util import requireDir, safe_str
@@ -31,9 +33,10 @@ slog = logging.getLogger('mythbox.settings')
 
 
 class SettingsException(Exception):
-    """Thrown when a setting fails validation in MythSettings""" 
-    pass
-
+    """Thrown when a setting fails validation in MythSettings"""
+    def __init__(self, message, wakeup=False):
+        Exception.__init__(self, message)
+        self.wakeup = wakeup
 
 class MythSettings(object):
     """Settings reside in $HOME/.xbmc/userdata/script_data/MythBox/settings.xml"""
@@ -143,6 +146,8 @@ class MythSettings(object):
             'upcoming_sort_by'           : 'Date',
             'upcoming_sort_ascending'    : 'False',
 
+            'wakeup_command'             : '',
+            'wakeup_wait'                : '60',
             'mount_recordings_dir'       : 'False',
         }
 
@@ -201,6 +206,7 @@ class MythSettings(object):
         MythSettings.verifyMySQLPort(self.get('mysql_port'))
         MythSettings.verifyMySQLDatabase(self.get('mysql_database'))
         MythSettings.verifyString(self.get('mysql_user'), 'Enter MySQL user. Hint: mythtv is the MythTV default')
+        self.verifyWakeUpWait(self.get('wakeup_wait'))
         self.verifyMySQLConnectivity()
         self.verifyMythTVConnectivity()
         
@@ -230,7 +236,11 @@ class MythSettings(object):
             db = MythDatabase(self, self.translator, domainCache)
             db.close()
             del db
+        except InterfaceError, ex:
+            slog.warning("MySQL connection error: %r" % ex)
+            raise SettingsException("Connect to MySQL failed: %s" % ex, wakeup=True)
         except Exception, ex:
+            slog.warning("MySQL connection error: %r" % ex)
             raise SettingsException("Connect to MySQL failed: %s" % ex)
     
     def __repr__(self):
@@ -269,6 +279,10 @@ class MythSettings(object):
     def verifyMySQLDatabase(dbName):
         MythSettings.verifyString(dbName, 'Enter MySQL database name. Hint: mythconverg is the MythTV default')
     
+    @staticmethod
+    def verifyWakeUpWait(seconds):
+        MythSettings.verifyNumberBetween(seconds, 1, 600, "Enter number between 1 and 600 (seconds)")
+
     @staticmethod    
     def verifyHostnameOrIPAddress(host, errMsg):
         try:
