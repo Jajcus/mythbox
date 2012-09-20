@@ -55,6 +55,7 @@ class HomeWindow(BaseWindow):
         self.t = self.translator.get
         self.lastFocusId = None
         self.shutdownPending = False
+        self.publisher = None
         self.bus.register(self)
         
     def onFocus(self, controlId):
@@ -216,7 +217,8 @@ class HomeWindow(BaseWindow):
         self.bus.publish({'id':Event.SHUTDOWN})
         
         try:
-            self.publisher.shutdown()
+            if self.publisher:
+                self.publisher.shutdown()
         except:
             log.exception('shutting down publisher')
             
@@ -237,7 +239,8 @@ class HomeWindow(BaseWindow):
             
             #for (poolName, poolInstance) in pool.pools.items():
             #    poolInstance.stopReaping = True
-            pool.pools['dbPool'].stopReaping = True
+            if 'dbPool' in pool.pools:
+                pool.pools['dbPool'].stopReaping = True
             
             if hasPendingWorkers():
                 waitForWorkersToDie(30.0) # in seconds
